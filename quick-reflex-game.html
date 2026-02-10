@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Quick Reflex – กดให้ทัน</title>
+  <style>
+    :root{
+      --bg:#0b1020; --card:#121a33; --text:#e9eeff; --muted:#a9b3d6;
+      --accent:#7c5cff; --danger:#ff4d6d; --ok:#2ee59d;
+      --shadow: 0 18px 45px rgba(0,0,0,.35);
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 600px at 20% 10%, rgba(124,92,255,.35), transparent 60%),
+                  radial-gradient(900px 500px at 90% 30%, rgba(46,229,157,.20), transparent 60%),
+                  var(--bg);
+      color:var(--text);
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+    }
+    .wrap{
+      width:min(980px, 100%);
+      display:grid;
+      grid-template-columns: 360px 1fr;
+      gap:16px;
+    }
+    @media (max-width: 860px){
+      .wrap{grid-template-columns:1fr}
+    }
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid rgba(255,255,255,.10);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+      padding:16px;
+      backdrop-filter: blur(8px);
+    }
+    h1{font-size:20px; margin:0 0 8px}
+    .muted{color:var(--muted); font-size:13px; line-height:1.5}
+    .row{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px}
+    .pill{
+      display:flex; align-items:center; gap:8px;
+      padding:10px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.10);
+      font-size:13px;
+    }
+    .pill b{font-size:14px}
+    label{display:block; font-size:13px; color:var(--muted); margin:14px 0 6px}
+    input, select{
+      width:100%;
+      padding:11px 12px;
+      border-radius: 12px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(10,14,30,.55);
+      color:var(--text);
+      outline:none;
+    }
+    input:focus, select:focus{border-color: rgba(124,92,255,.65)}
+    button{
+      width:100%;
+      margin-top:12px;
+      padding:12px 14px;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.14);
+      background: linear-gradient(180deg, rgba(124,92,255,.95), rgba(124,92,255,.75));
+      color:#fff;
+      font-weight:700;
+      cursor:pointer;
+      box-shadow: 0 12px 25px rgba(124,92,255,.25);
+    }
+    button:disabled{
+      cursor:not-allowed;
+      opacity:.6;
+      box-shadow:none;
+    }
+    .secondary{
+      background: rgba(255,255,255,.06);
+      box-shadow:none;
+      font-weight:600;
+    }
+
+    /* Game board */
+    .boardWrap{display:flex; flex-direction:column; gap:12px}
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:10px; flex-wrap:wrap;
+    }
+    .badge{
+      padding:8px 10px;
+      border-radius: 12px;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.10);
+      font-size:13px;
+      display:flex; align-items:center; gap:8px;
+    }
+    .badge span{color:var(--muted)}
+    .arena{
+      position:relative;
+      width:100%;
+      aspect-ratio: 16/9;
+      border-radius: var(--radius);
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.12);
+      background:
+        radial-gradient(800px 400px at 30% 20%, rgba(124,92,255,.18), transparent 55%),
+        radial-gradient(700px 380px at 80% 60%, rgba(46,229,157,.12), transparent 55%),
+        rgba(8,10,22,.65);
+      min-height: 340px;
+    }
+    .target{
+      position:absolute;
+      width:56px; height:56px;
+      border-radius: 999px;
+      border:2px solid rgba(255,255,255,.9);
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.95), rgba(255,255,255,.2)),
+                  linear-gradient(180deg, rgba(255,77,109,.95), rgba(255,77,109,.55));
+      box-shadow: 0 14px 30px rgba(255,77,109,.22);
+      display:flex; align-items:center; justify-content:center;
+      user-select:none;
+      transform: translate(-50%, -50%);
+      cursor:pointer;
+      transition: transform .06s ease;
+    }
+    .target:active{transform: translate(-50%, -50%) scale(.95)}
+    .floatText{
+      position:absolute;
+      transform: translate(-50%, -50%);
+      font-weight:800;
+      pointer-events:none;
+      animation: pop .55s ease forwards;
+      text-shadow: 0 10px 20px rgba(0,0,0,.45);
+    }
+    @keyframes pop{
+      0%{opacity:0; transform:translate(-50%,-50%) scale(.9)}
+      20%{opacity:1}
+      100%{opacity:0; transform:translate(-50%,-85%) scale(1.12)}
+    }
+    .footerHint{font-size:12px; color:var(--muted)}
+    .status{
+      padding:10px 12px;
+      border-radius: 14px;
+      border:1px dashed rgba(255,255,255,.20);
+      background: rgba(255,255,255,.04);
+      color: var(--muted);
+      font-size:13px;
+      line-height:1.5;
+    }
+    .ok{color: rgba(46,229,157,.95)}
+    .danger{color: rgba(255,77,109,.95)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="card">
+      <h1>Quick Reflex – กดให้ทัน</h1>
+      <div class="muted">
+        กติกา: เริ่มเกมแล้ว “เป้าหมาย” จะโผล่สุ่มในกรอบ ให้คลิกให้ทันภายในเวลาจำกัด  
+        คลิกโดน = ได้แต้ม, คลิกพลาด = โดนหักนะจ๊ะ
+      </div>
+
+      <div class="row">
+        <div class="pill">🎯 <span>Score</span> <b id="scorePill">0</b></div>
+        <div class="pill">⚡ <span>Streak</span> <b id="streakPill">0</b></div>
+        <div class="pill">🏆 <span>Best</span> <b id="bestPill">0</b></div>
+      </div>
+
+      <label>ระยะเวลาเกม (วินาที)</label>
+      <select id="duration">
+        <option value="20">20</option>
+        <option value="30" selected>30</option>
+        <option value="45">45</option>
+        <option value="60">60</option>
+      </select>
+
+      <label>ความยาก (ความเร็วเป้าหมาย)</label>
+      <select id="difficulty">
+        <option value="easy">ง่าย</option>
+        <option value="normal" selected>ปกติ</option>
+        <option value="hard">ยาก</option>
+        <option value="insane">โหด</option>
+      </select>
+
+      <button id="startBtn">เริ่มเกม</button>
+      <button id="resetBtn" class="secondary">รีเซ็ตสถิติ</button>
+
+      <div class="status" id="statusBox" style="margin-top:12px;">
+        สถานะ: พร้อมเล่น ✅
+      </div>
+      <div class="footerHint" style="margin-top:10px;">
+        ทิป: เล่นบนมือถือก็ได้ (แตะให้ไว) นะจ๊ะ
+      </div>
+    </section>
+
+    <section class="card boardWrap">
+      <div class="topbar">
+        <div class="badge">⏱️ <span>Time</span> <b id="timeLeft">0.0</b></div>
+        <div class="badge">🎯 <span>Hits</span> <b id="hits">0</b></div>
+        <div class="badge">❌ <span>Miss</span> <b id="miss">0</b></div>
+      </div>
+
+      <div class="arena" id="arena" aria-label="game arena"></div>
+
+      <div class="footerHint">
+        ถ้าอยากให้ยากขึ้น: เลือก “โหด/ยาก” แล้วพยายามรักษา streak ให้ยาวที่สุดนะจ๊ะ
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const arena = document.getElementById('arena');
+    const startBtn = document.getElementById('startBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const durationSel = document.getElementById('duration');
+    const difficultySel = document.getElementById('difficulty');
+
+    const scorePill = document.getElementById('scorePill');
+    const streakPill = document.getElementById('streakPill');
+    const bestPill = document.getElementById('bestPill');
+    const timeLeftEl = document.getElementById('timeLeft');
+    const hitsEl = document.getElementById('hits');
+    const missEl = document.getElementById('miss');
+    const statusBox = document.getElementById('statusBox');
+
+    const LS_BEST = 'qr_best_score_v1';
+
+    let running = false;
+    let score = 0, streak = 0, best = Number(localStorage.getItem(LS_BEST) || 0);
+    let hits = 0, miss = 0;
+
+    let endAt = 0;
+    let tickRaf = null;
+
+    let targetTimer = null;
+    let currentTarget = null;
+    let targetBornAt = 0;
+
+    function now(){ return performance.now(); }
+
+    function setStatus(msg, kind){
+      statusBox.innerHTML = `สถานะ: ${msg}`;
+      statusBox.classList.remove('ok','danger');
+      if(kind) statusBox.classList.add(kind);
+    }
+
+    function updateUI(){
+      scorePill.textContent = score;
+      streakPill.textContent = streak;
+      bestPill.textContent = best;
+      hitsEl.textContent = hits;
+      missEl.textContent = miss;
+    }
+
+    function difficultyConfig(){
+      const d = difficultySel.value;
+      // spawn interval range (ms) + target lifetime (ms)
+      if(d === 'easy')   return { min: 850, max: 1200, life: 900 };
+      if(d === 'normal') return { min: 650, max: 950,  life: 750 };
+      if(d === 'hard')   return { min: 500, max: 800,  life: 650 };
+      return { min: 380, max: 650, life: 520 }; // insane
+    }
+
+    function rand(min, max){ return Math.random() * (max - min) + min; }
+
+    function clearTarget(){
+      if(currentTarget){
+        currentTarget.remove();
+        currentTarget = null;
+      }
+    }
+
+    function popText(x, y, text, good=true){
+      const el = document.createElement('div');
+      el.className = 'floatText';
+      el.style.left = x + 'px';
+      el.style.top  = y + 'px';
+      el.style.color = good ? 'rgba(46,229,157,.95)' : 'rgba(255,77,109,.95)';
+      el.textContent = text;
+      arena.appendChild(el);
+      setTimeout(()=> el.remove(), 600);
+    }
+
+    function spawnTarget(){
+      clearTarget();
+      const t = document.createElement('div');
+      t.className = 'target';
+      t.setAttribute('role','button');
+      t.setAttribute('aria-label','target');
+      t.textContent = '🎯';
+
+      const rect = arena.getBoundingClientRect();
+      const padding = 36;
+      const x = rand(padding, rect.width - padding);
+      const y = rand(padding, rect.height - padding);
+
+      t.style.left = x + 'px';
+      t.style.top  = y + 'px';
+
+      t.addEventListener('click', (e)=>{
+        if(!running) return;
+        e.stopPropagation();
+
+        const age = now() - targetBornAt;
+        // quick hit bonus: faster => more
+        const bonus = Math.max(0, Math.round((difficultyConfig().life - age) / 80));
+        const gained = 10 + bonus;
+
+        score += gained;
+        streak += 1;
+        hits += 1;
+
+        popText(x, y, `+${gained}`, true);
+        clearTarget();
+        updateUI();
+
+        scheduleNextTarget();
+      });
+
+      currentTarget = t;
+      targetBornAt = now();
+      arena.appendChild(t);
+
+      // auto-miss if not clicked within lifetime
+      const life = difficultyConfig().life;
+      setTimeout(()=>{
+        if(!running) return;
+        if(currentTarget === t){
+          // miss
+          miss += 1;
+          streak = 0;
+          score = Math.max(0, score - 5);
+          popText(x, y, `-5`, false);
+          clearTarget();
+          updateUI();
+          scheduleNextTarget();
+        }
+      }, life);
+    }
+
+    function scheduleNextTarget(){
+      if(targetTimer) clearTimeout(targetTimer);
+      if(!running) return;
+
+      const cfg = difficultyConfig();
+      const delay = rand(cfg.min, cfg.max);
+      targetTimer = setTimeout(spawnTarget, delay);
+    }
+
+    function tick(){
+      if(!running) return;
+      const leftMs = endAt - now();
+      const left = Math.max(0, leftMs / 1000);
+      timeLeftEl.textContent = left.toFixed(1);
+
+      if(leftMs <= 0){
+        endGame();
+        return;
+      }
+      tickRaf = requestAnimationFrame(tick);
+    }
+
+    function startGame(){
+      if(running) return;
+      running = true;
+
+      score = 0; streak = 0; hits = 0; miss = 0;
+      updateUI();
+
+      const seconds = Number(durationSel.value);
+      endAt = now() + seconds * 1000;
+
+      setStatus('เริ่มแล้ว! คลิกเป้าหมายให้ทัน ⚡', 'ok');
+      startBtn.disabled = true;
+
+      // click miss on arena
+      arena.onclick = (e)=>{
+        if(!running) return;
+        // clicking background counts as miss (small penalty)
+        miss += 1;
+        streak = 0;
+        score = Math.max(0, score - 2);
+        updateUI();
+
+        const rect = arena.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        popText(x, y, `-2`, false);
+      };
+
+      spawnTarget();
+      scheduleNextTarget();
+      tickRaf = requestAnimationFrame(tick);
+    }
+
+    function endGame(){
+      running = false;
+      startBtn.disabled = false;
+
+      if(targetTimer) clearTimeout(targetTimer);
+      if(tickRaf) cancelAnimationFrame(tickRaf);
+      clearTarget();
+
+      arena.onclick = null;
+      timeLeftEl.textContent = '0.0';
+
+      if(score > best){
+        best = score;
+        localStorage.setItem(LS_BEST, String(best));
+        setStatus(`จบเกม! คะแนน ${score} 🏆 ทำสถิติใหม่แล้ว`, 'ok');
+      }else{
+        setStatus(`จบเกม! คะแนน ${score} (Best ${best})`, 'danger');
+      }
+      updateUI();
+    }
+
+    function resetStats(){
+      best = 0;
+      localStorage.removeItem(LS_BEST);
+      score = 0; streak = 0; hits = 0; miss = 0;
+      timeLeftEl.textContent = '0.0';
+      clearTarget();
+      setStatus('รีเซ็ตแล้ว พร้อมเล่น ✅');
+      updateUI();
+    }
+
+    // init
+    bestPill.textContent = best;
+    timeLeftEl.textContent = '0.0';
+    updateUI();
+
+    startBtn.addEventListener('click', startGame);
+    resetBtn.addEventListener('click', resetStats);
+  </script>
+</body>
+</html>
